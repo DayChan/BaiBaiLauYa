@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hans-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#5C0A0A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>拜潮汕老爷</title>
+  <link rel="stylesheet" href="/web/css/main.css" />
+  <link rel="stylesheet" href="/web/css/deity.css" />
+  <link rel="stylesheet" href="/web/css/jiaobei.css" />
+  <link rel="stylesheet" href="/web/css/chat.css" />
+</head>
+<body>
+  <main id="app">
+    <!-- 神坛背景层（CSS 渐变 + 香烟） -->
+    <div id="altar" aria-hidden="true">
+      <div class="incense incense-left">
+        <span class="smoke s1"></span>
+        <span class="smoke s2"></span>
+        <span class="smoke s3"></span>
+      </div>
+      <div class="incense incense-right">
+        <span class="smoke s1"></span>
+        <span class="smoke s2"></span>
+        <span class="smoke s3"></span>
+      </div>
+      <div class="altar-plaque">神 恩 浩 荡</div>
+    </div>
+
+    <!-- 老爷角色（SVG 将在第 3 步内联） -->
+    <div id="deity-container" data-state="idle" aria-label="潮汕老爷">
+      <!-- SVG placeholder，第 3 步填充 -->
+    </div>
+
+    <!-- 老爷头顶浮动对话气泡（短反应） -->
+    <div id="speech-bubble" class="hidden" role="status" aria-live="polite"></div>
+
+    <!-- 聊天抽屉（第 6 步填充） -->
+    <section id="chat-drawer" aria-label="与老爷对话" class="collapsed">
+      <!-- 填充于 chat-view.js -->
+    </section>
+
+    <!-- 摔圣杯遮罩（第 5 步填充） -->
+    <div id="jiaobei-overlay" class="hidden" aria-hidden="true">
+      <!-- 填充于 jiaobei-view.js -->
+    </div>
+  </main>
+
+  <!-- Core 模块（平台无关）与 Web view 模块在后续步骤中加载 -->
+  <script type="module" src="/web/js/app.js"></script>
+</body>
+</html>
