@@ -29,9 +29,102 @@
       <div class="altar-plaque">神 恩 浩 荡</div>
     </div>
 
-    <!-- 老爷角色（SVG 将在第 3 步内联） -->
+    <!-- 老爷角色（内联 SVG，分层命名便于 CSS 定位） -->
     <div id="deity-container" data-state="idle" aria-label="潮汕老爷">
-      <!-- SVG placeholder，第 3 步填充 -->
+      <svg id="deity-svg" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="g-robe" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c13128" />
+            <stop offset="60%" stop-color="#8b0000" />
+            <stop offset="100%" stop-color="#4a0707" />
+          </linearGradient>
+          <linearGradient id="g-hat" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2a2a2a" />
+            <stop offset="100%" stop-color="#0a0a0a" />
+          </linearGradient>
+          <radialGradient id="g-cheek" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0%" stop-color="#ff8d7a" stop-opacity="0.75" />
+            <stop offset="100%" stop-color="#ff8d7a" stop-opacity="0" />
+          </radialGradient>
+          <radialGradient id="g-halo" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0%" stop-color="#ffe49a" stop-opacity="0.75" />
+            <stop offset="60%" stop-color="#f0c75e" stop-opacity="0.25" />
+            <stop offset="100%" stop-color="#f0c75e" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+
+        <!-- 光环 -->
+        <ellipse id="deity-halo" cx="150" cy="115" rx="110" ry="118" fill="url(#g-halo)" />
+
+        <!-- 身体：袍子 -->
+        <g id="deity-body">
+          <!-- 袍身 -->
+          <path d="M60 400 L80 220 Q150 190 220 220 L240 400 Z" fill="url(#g-robe)" />
+          <!-- 金色襟带 -->
+          <path d="M150 200 L138 400 L162 400 L150 200 Z" fill="#d4af37" opacity="0.85" />
+          <!-- 袖口 -->
+          <ellipse cx="78" cy="330" rx="22" ry="18" fill="#f0c75e" />
+          <ellipse cx="222" cy="330" rx="22" ry="18" fill="#f0c75e" />
+          <!-- 双手合十（简化为两只小手交叠） -->
+          <ellipse cx="150" cy="340" rx="28" ry="18" fill="#f5d7a8" stroke="#8a5a2b" stroke-width="1.5" />
+          <path d="M130 340 Q150 334 170 340" fill="none" stroke="#8a5a2b" stroke-width="1.5" />
+        </g>
+
+        <!-- 头部整体（呼吸时整体浮动） -->
+        <g id="deity-head">
+          <!-- 脖子 -->
+          <rect x="135" y="170" width="30" height="30" fill="#f5d7a8" />
+          <!-- 脸 -->
+          <ellipse id="deity-face" cx="150" cy="130" rx="58" ry="62" fill="#f5d7a8" stroke="#b48556" stroke-width="1.5" />
+          <!-- 腮红 -->
+          <ellipse cx="105" cy="150" rx="14" ry="10" fill="url(#g-cheek)" />
+          <ellipse cx="195" cy="150" rx="14" ry="10" fill="url(#g-cheek)" />
+
+          <!-- 眉毛（可翻转为怒眉） -->
+          <g id="deity-eyebrows">
+            <path class="brow brow-left" d="M105 108 Q120 100 138 110" fill="none" stroke="#eaeaea" stroke-width="5" stroke-linecap="round" />
+            <path class="brow brow-right" d="M162 110 Q180 100 195 108" fill="none" stroke="#eaeaea" stroke-width="5" stroke-linecap="round" />
+          </g>
+
+          <!-- 眼睛 -->
+          <g id="deity-eyes">
+            <circle cx="122" cy="128" r="4" fill="#2b1505" />
+            <circle cx="178" cy="128" r="4" fill="#2b1505" />
+            <!-- 高光 -->
+            <circle cx="123" cy="126" r="1.2" fill="#fff" />
+            <circle cx="179" cy="126" r="1.2" fill="#fff" />
+          </g>
+
+          <!-- 嘴巴（两个版本，CSS 切换） -->
+          <g id="deity-mouth-closed">
+            <path d="M132 158 Q150 168 168 158" fill="none" stroke="#7a2a1a" stroke-width="3" stroke-linecap="round" />
+          </g>
+          <g id="deity-mouth-open" class="hidden-layer">
+            <ellipse cx="150" cy="162" rx="12" ry="8" fill="#3a1008" />
+            <path d="M140 158 Q150 166 160 158" fill="#a03020" />
+          </g>
+
+          <!-- 胡子（白长须） -->
+          <g id="deity-beard">
+            <path d="M112 168 Q150 230 188 168 Q180 260 150 280 Q120 260 112 168 Z"
+                  fill="#f4f1ec" stroke="#c9c2b6" stroke-width="1" />
+            <!-- 八字胡 -->
+            <path d="M130 158 Q122 172 115 178" fill="none" stroke="#f4f1ec" stroke-width="4" stroke-linecap="round" />
+            <path d="M170 158 Q178 172 185 178" fill="none" stroke="#f4f1ec" stroke-width="4" stroke-linecap="round" />
+          </g>
+
+          <!-- 乌纱帽 -->
+          <g id="deity-hat">
+            <path d="M95 72 Q150 52 205 72 L210 98 L90 98 Z" fill="url(#g-hat)" />
+            <rect x="100" y="92" width="100" height="14" fill="#1a1a1a" />
+            <!-- 帽子前饰金牌 -->
+            <rect x="140" y="78" width="20" height="14" fill="#d4af37" />
+            <!-- 帽翅 -->
+            <ellipse cx="70" cy="99" rx="22" ry="5" fill="#1a1a1a" />
+            <ellipse cx="230" cy="99" rx="22" ry="5" fill="#1a1a1a" />
+          </g>
+        </g>
+      </svg>
     </div>
 
     <!-- 老爷头顶浮动对话气泡（短反应） -->

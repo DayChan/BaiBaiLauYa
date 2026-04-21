@@ -1,1 +1,97 @@
-/* 老爷角色动画（第 3 步填充） */
+/* ============================================================
+   老爷角色动画
+   —— 四种状态：idle(呼吸) / talking(说话) / laughing(大笑) / angry(生气)
+   —— 通过 #deity-container[data-state="..."] 切换
+   ============================================================ */
+
+#deity-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.5));
+}
+
+/* 默认隐藏"张嘴"层 */
+#deity-svg .hidden-layer { display: none; }
+
+/* ------------------------------------------------------------
+   光环呼吸脉动
+   ------------------------------------------------------------ */
+#deity-halo {
+  transform-origin: 150px 115px;
+  animation: halo-pulse 4s ease-in-out infinite;
+}
+@keyframes halo-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.9; }
+  50%      { transform: scale(1.06); opacity: 1;   }
+}
+
+/* ------------------------------------------------------------
+   idle 态：整体呼吸（上下微浮 + 细微旋转）
+   ------------------------------------------------------------ */
+#deity-container {
+  animation: deity-breathe 3.2s ease-in-out infinite;
+}
+@keyframes deity-breathe {
+  0%, 100% { transform: translateX(-50%) translateY(0)    rotate(0deg); }
+  50%      { transform: translateX(-50%) translateY(-8px) rotate(0.6deg); }
+}
+
+/* 头部的轻微额外浮动（叠加在整体之上） */
+#deity-head {
+  transform-origin: 150px 130px;
+  animation: head-float 3.2s ease-in-out infinite;
+}
+@keyframes head-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* ------------------------------------------------------------
+   talking 态：嘴巴在闭合/张开之间交替
+   ------------------------------------------------------------ */
+#deity-container[data-state="talking"] #deity-mouth-closed { animation: mouth-flicker-close 0.32s steps(1, end) infinite; }
+#deity-container[data-state="talking"] #deity-mouth-open   { display: inline; animation: mouth-flicker-open  0.32s steps(1, end) infinite; }
+
+@keyframes mouth-flicker-close {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes mouth-flicker-open {
+  0%, 49%   { opacity: 0; }
+  50%, 100% { opacity: 1; }
+}
+
+/* ------------------------------------------------------------
+   laughing 态：整体颤抖 + 光环脉动加快
+   ------------------------------------------------------------ */
+#deity-container[data-state="laughing"] {
+  animation: deity-laugh 0.45s ease-in-out infinite;
+}
+#deity-container[data-state="laughing"] #deity-halo { animation-duration: 1.5s; }
+#deity-container[data-state="laughing"] #deity-mouth-open { display: inline; }
+#deity-container[data-state="laughing"] #deity-mouth-closed { opacity: 0; }
+#deity-container[data-state="laughing"] .brow { transform: translateY(-3px); }
+
+@keyframes deity-laugh {
+  0%, 100% { transform: translateX(-50%) translateY(0)    scale(1); }
+  50%      { transform: translateX(-50%) translateY(-6px) scale(1.02); }
+}
+
+/* ------------------------------------------------------------
+   angry 态：左右快速抖动 + 眉毛压低倒八字
+   ------------------------------------------------------------ */
+#deity-container[data-state="angry"] {
+  animation: deity-shake 0.08s linear infinite;
+}
+#deity-container[data-state="angry"] .brow-left  { transform: translate(0, 6px) rotate(-18deg); transform-origin: 120px 108px; }
+#deity-container[data-state="angry"] .brow-right { transform: translate(0, 6px) rotate( 18deg); transform-origin: 180px 108px; }
+#deity-container[data-state="angry"] #deity-halo { filter: hue-rotate(-20deg) saturate(1.4); }
+
+@keyframes deity-shake {
+  0%, 100% { transform: translateX(calc(-50% - 2px)); }
+  50%      { transform: translateX(calc(-50% + 2px)); }
+}
+
+/* 平滑过渡眉毛状态切换 */
+.brow { transition: transform 0.25s ease; }
