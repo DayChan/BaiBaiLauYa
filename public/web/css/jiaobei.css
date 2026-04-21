@@ -1,1 +1,140 @@
-/* 摔圣杯动画（第 5 步填充） */
+/* ============================================================
+   摔圣杯动画
+   —— 两个半月形木块从神坛前方飞起、旋转、下落、snap 到终态
+   —— 终态角度由 JS 通过 CSS 变量 --final-rotation 注入
+   ============================================================ */
+
+#jiaobei-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 60%,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.75) 100%);
+  pointer-events: none; /* 动画期间不阻挡操作，结果弹窗再开启 */
+}
+
+/* 木台（落地区） */
+.jiaobei-stage {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translateX(-50%);
+  width: min(70vw, 360px);
+  height: 20px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #3b1f0a 0%, #6b3816 50%, #3b1f0a 100%);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
+/* ------------------------------------------------------------
+   单个圣杯（半月形）
+   —— 正面 = 平面朝上（.face-up，阴），用平坦的灰木纹
+   —— 反面 = 平面朝下（.face-down，阳），露出弯曲的红漆弧面
+   —— 由 JS 在 throw 前通过 class 决定最终朝向
+   ------------------------------------------------------------ */
+.jiaobei {
+  position: absolute;
+  bottom: calc(22% + 20px);
+  width: 78px;
+  height: 42px;
+  border-radius: 78px 78px 6px 6px; /* 上半圆 */
+  background: linear-gradient(180deg, #c13128 0%, #7a1a0e 100%);
+  border: 2px solid #3b0a05;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.45);
+  will-change: transform;
+  --final-rotation: 0deg;
+}
+
+/* 平面（底部）纹理 —— 用 ::after 画一条浅色直线代表平面朝向 */
+.jiaobei::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 3px;
+  height: 4px;
+  background: linear-gradient(90deg, #d9c39a, #f5e6c8, #d9c39a);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #7a5a2b inset;
+}
+
+/* 弧面朝下时（显示平面朝上 = 阴）：旋转 180° */
+.jiaobei.face-up   { --final-rotation: 180deg; }
+.jiaobei.face-down { --final-rotation: 0deg;   }
+
+/* 左右初始位置 */
+.jiaobei.left  { left: calc(50% - 70px); }
+.jiaobei.right { left: calc(50% + 70px - 78px); }
+
+/* ------------------------------------------------------------
+   抛掷动画 —— 三段：飞起(0-50%) → 下落(50-85%) → 落地 snap(85-100%)
+   ------------------------------------------------------------ */
+@keyframes jiaobei-throw-left {
+  0%   { transform: translate(0, 0)            rotate(0deg); }
+  15%  { transform: translate(-10px, -30vh)    rotate(-360deg); }
+  40%  { transform: translate(-20px, -55vh)    rotate(-720deg); }
+  55%  { transform: translate(-24px, -62vh)    rotate(-900deg); }
+  80%  { transform: translate(-20px, -8px)     rotate(var(--final-rotation)); }
+  88%  { transform: translate(-20px, -16px)    rotate(var(--final-rotation)); }
+  94%  { transform: translate(-20px, -4px)     rotate(var(--final-rotation)); }
+  100% { transform: translate(-20px, 0)        rotate(var(--final-rotation)); }
+}
+
+@keyframes jiaobei-throw-right {
+  0%   { transform: translate(0, 0)            rotate(0deg); }
+  15%  { transform: translate(10px, -28vh)     rotate(380deg); }
+  40%  { transform: translate(22px, -58vh)     rotate(760deg); }
+  55%  { transform: translate(26px, -64vh)     rotate(940deg); }
+  80%  { transform: translate(22px, -8px)      rotate(var(--final-rotation)); }
+  88%  { transform: translate(22px, -18px)     rotate(var(--final-rotation)); }
+  94%  { transform: translate(22px, -4px)      rotate(var(--final-rotation)); }
+  100% { transform: translate(22px, 0)         rotate(var(--final-rotation)); }
+}
+
+.jiaobei.throwing.left  { animation: jiaobei-throw-left  1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+.jiaobei.throwing.right { animation: jiaobei-throw-right 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+/* ------------------------------------------------------------
+   结果横幅
+   ------------------------------------------------------------ */
+#jiaobei-result {
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  transform: translateX(-50%) scale(0.6);
+  opacity: 0;
+  text-align: center;
+  pointer-events: auto;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+#jiaobei-result.show {
+  transform: translateX(-50%) scale(1);
+  opacity: 1;
+}
+#jiaobei-result .result-label {
+  display: block;
+  font-family: var(--font-ser);
+  font-size: clamp(48px, 14vw, 88px);
+  color: var(--c-gold-bright);
+  text-shadow:
+    0 0 16px rgba(240, 199, 94, 0.9),
+    0 4px 0 #5c0a0a,
+    0 6px 20px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.1em;
+}
+#jiaobei-result .result-meaning {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+  color: var(--c-cream);
+  letter-spacing: 0.2em;
+}
+
+/* 不同结果的色彩情绪 */
+#jiaobei-result[data-result="sheng"] .result-label { color: #ffd666; }
+#jiaobei-result[data-result="xiao"]  .result-label { color: #f5e6c8; }
+#jiaobei-result[data-result="yin"]   .result-label { color: #cc4444; }
