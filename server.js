@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import Anthropic from '@anthropic-ai/sdk';
 
-import { SYSTEM_PROMPT, buildWishUserMessage } from './public/core/persona.js';
+import { SYSTEM_PROMPT } from './public/core/persona.js';
 
 dotenv.config();
 
@@ -26,15 +26,7 @@ app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
 /**
  * POST /api/chat
- * body: {
- *   messages: [{role:'user'|'assistant', content:string}, ...]  // 历史，最后一条可能是空占位
- *   wishMode?: boolean,
- *   wishText?: string,
- *   jiaobeiResult?: 'sheng'|'xiao'|'yin',
- * }
- *
- * 若 wishMode=true，服务端会用 buildWishUserMessage 替换最后一条 user 消息
- * （或直接追加），以保证 LLM 同时拿到愿望原文与摔杯结果。
+ * body: { messages: [{role:'user'|'assistant', content:string}, ...] }
  *
  * SSE 事件：
  *   event: delta  data: {"text":"..."}
@@ -42,22 +34,11 @@ app.get('/healthz', (_req, res) => res.json({ ok: true }));
  *   event: error  data: {"message":"..."}
  */
 app.post('/api/chat', async (req, res) => {
-  const { messages = [], wishMode = false, wishText, jiaobeiResult } = req.body ?? {};
+  const { messages = [] } = req.body ?? {};
 
   if (!Array.isArray(messages) || messages.length === 0) {
     res.status(400).json({ error: 'messages 不得为空' });
     return;
-  }
-
-  // 许愿模式：把最后一条 user 消息替换成带结果的模板
-  const finalMessages = messages.slice();
-  if (wishMode && wishText && jiaobeiResult) {
-    const wishMsg = { role: 'user', content: buildWishUserMessage(wishText, jiaobeiResult) };
-    if (finalMessages.length && finalMessages[finalMessages.length - 1].role === 'user') {
-      finalMessages[finalMessages.length - 1] = wishMsg;
-    } else {
-      finalMessages.push(wishMsg);
-    }
   }
 
   // SSE 头
@@ -87,7 +68,7 @@ app.post('/api/chat', async (req, res) => {
           cache_control: { type: 'ephemeral' },
         },
       ],
-      messages: finalMessages,
+      messages,
       thinking: { type: 'adaptive' },
       output_config: { effort: 'low' },
     });

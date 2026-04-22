@@ -1,9 +1,12 @@
 // ============================================================
-// App 状态机总控（分步接入）
-// 已接入：deity 动画、jiaobei 抛掷、chat 抽屉
-// 待接入：core/chat-state、core/persona、fetch-transport（对话 LLM）
+// App 状态机总控
+// 请安：user 输入 → ChatState.addUser → ApiClient.chatStream
+//      → openDeityStream 增量写入 → commit
+// 许愿：user 输入 → "摔圣杯中…" → throwJiaobei →
+//      core/persona.buildWishUserMessage 把结果缝进 user 消息
+//      → 老爷流式回应（LLM 历史保留完整上下文）
 // ============================================================
-import { mountDeity, setDeityState, talkFor } from './deity-view.js';
+import { mountDeity, setDeityState } from './deity-view.js';
 import { mountJiaobei, throwJiaobei, dismissJiaobei } from './jiaobei-view.js';
 import {
   mountChat,
@@ -15,40 +18,78 @@ import {
   openDeityStream,
 } from './chat-view.js';
 
-import { RESULT_LABEL, RESULT_MEANING } from '/core/jiaobei.js';
+import { ChatState } from '/core/chat-state.js';
+import { ApiClient } from '/core/api-client.js';
+import { buildWishUserMessage } from '/core/persona.js';
+import { fetchTransport } from './fetch-transport.js';
 
-// ---- 占位"假老爷"：尚未接 LLM，先用本地字符串 stub ----
-// 第 7、8、9 步会把它替换为流式 API 调用
-async function fakeDeityReply({ userText, wishResult } = {}) {
-  const stream = openDeityStream();
+const chatState = new ChatState({ maxTurns: 10 });
+const api = new ApiClient(fetchTransport);
+
+let inflight = null; // AbortController：同时只允许一条本爷回复在吐
+
+/**
+ * 向老爷请示一次。wishCtx 非空时走许愿模式。
+ * @param {string} displayText UI 气泡中展示的用户原文（许愿时已在外部写过）
+ * @param {string} llmText 真正发给 LLM 的 user content（许愿模式下含摔杯结果）
+ * @param {boolean} alreadyShown 外部已渲染过 user 气泡则跳过
+ */
+async function askDeity(displayText, llmText, alreadyShown = false) {
+  // 1. UI + 历史：确保一致（史官记的是 LLM 看到的版本）
+  if (!alreadyShown) appendUser(displayText);
+  chatState.addUser(llmText);
+
+  // 2. 打开流式气泡 + 老爷开口
+  const uiStream = openDeityStream();
+  const historyCursor = chatState.openAssistant();
   setDeityState('talking');
 
-  const base = wishResult
-    ? `汝许此愿："${userText}"。本爷为汝掷杯——${RESULT_LABEL[wishResult]}，${RESULT_MEANING[wishResult]}。且待真言入主之时，本爷再赐详解。`
-    : `汝问："${userText}"。此乃占位回应，真言待本爷接入大模型之后再说。`;
+  // 3. 发请求
+  inflight?.abort();
+  inflight = new AbortController();
 
-  // 模拟打字机：逐字节吐
-  for (const ch of base) {
-    await new Promise((r) => setTimeout(r, 28));
-    stream.append(ch);
+  try {
+    await api.chatStream(
+      { messages: chatState.toMessages().slice(0, -1) },
+      {
+        signal: inflight.signal,
+        onDelta: (chunk) => {
+          uiStream.append(chunk);
+          historyCursor.append(chunk);
+        },
+        onDone: () => {
+          uiStream.done();
+          historyCursor.commit();
+        },
+        onError: (msg) => {
+          console.error('[askDeity] transport error:', msg);
+        },
+      },
+    );
+  } catch (err) {
+    console.error('[askDeity]', err);
+    uiStream.append('\n（本爷今日失声，稍后再来叩问。）');
+    uiStream.done();
+    historyCursor.cancel();
+    appendSystem('— 连线老爷失败 —');
+  } finally {
+    setDeityState('idle');
+    inflight = null;
   }
-  stream.done();
-  setDeityState('idle');
 }
 
 async function handleWish(wishText) {
   appendUser(`【许愿】${wishText}`);
   appendSystem('摔圣杯中……');
   const result = await throwJiaobei();
-  // 短停顿让用户看清结果横幅
   await new Promise((r) => setTimeout(r, 1200));
   dismissJiaobei();
-  await fakeDeityReply({ userText: wishText, wishResult: result });
+  const llmText = buildWishUserMessage(wishText, result);
+  await askDeity(`【许愿】${wishText}`, llmText, /*alreadyShown=*/ true);
 }
 
 async function handleChat(text) {
-  appendUser(text);
-  await fakeDeityReply({ userText: text });
+  await askDeity(text, text);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -59,14 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
     onWish: handleWish,
   });
 
-  // 点击老爷：如果抽屉关着就打开，否则切来让老爷吐一下气
   const deity = document.getElementById('deity-container');
   deity?.addEventListener('click', () => {
     const drawer = document.getElementById('chat-drawer');
     if (drawer.classList.contains('collapsed')) {
       expandDrawer();
-    } else {
-      talkFor(800);
     }
   });
 
@@ -74,4 +112,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 调试挂出
-window.__app = { setDeityState, throwJiaobei, expandDrawer, collapseDrawer, setMode };
+window.__app = { setDeityState, throwJiaobei, expandDrawer, collapseDrawer, setMode, chatState };
